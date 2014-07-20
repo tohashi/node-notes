@@ -1,6 +1,7 @@
 fs = require 'fs'
 colors = require 'colors'
 async = require 'async'
+_ = require 'underscore'
 
 # The Notes class holds all the logic needed for crawling a directory of files, 
 # searching for a set of patterns to annotate.
@@ -12,7 +13,10 @@ async = require 'async'
 # FIXME: Keep up with things to fix.
 #
 class Notes
-  
+
+  setDefaultRegExp = (name) ->
+    new RegExp "^.*(#|\\/\\/|\\/\\*)\\s*#{name}\\W*"
+
   # Defines the patterns that will be checked during file annotating.
   # If you want to run this on something other than ruby, coffeesciprt, or javascript 
   # files then you may need to change this. The default pattern is looking for a line 
@@ -20,21 +24,25 @@ class Notes
   #
   @patterns =
     todo:
-      regexp: /^.*(#|\/\/|\/\*)\s*TODO\W*/
-      label:  "✓ TODO".underline.magenta
+      name: "TODO"
+      label:  "✓ TODO"
+      color: "magenta"
     note:
-      regexp: /^.*(#|\/\/|\/\*)\s*NOTE\W*/
-      label:  "✐ NOTE".underline.blue
+      name: "NOTE"
+      label:  "✐ NOTE"
+      color: "blue"
     optimize:
-      regexp: /^.*(#|\/\/|\/\*)\s*OPTIMIZE\W*/
-      label:  "↘ OPTIMIZE".underline.yellow
+      name: "OPTIMIZE"
+      label:  "↘ OPTIMIZE"
+      color: "yellow"
     fixme:
-      regexp: /^.*(#|\/\/|\/\*)\s*FIXME\W*/
-      label:  "☂ FIXME".underline.red
+      name: "FIXME"
+      label:  "☂ FIXME"
+      color: "red"
   
   # You can also customize what types of file extensions will be filtered out of annotation.
   @filterExtensions = [
-    "\\.jpg", "\\.jpeg", "\\.mov", "\\.mp3", "\\.gif", "\\.png", 
+    "\\.jpg", "\\.jpeg", "\\.mov", "\\.mp3", "\\.gif", "\\.png",
     "\\.log", "\\.bin", "\\.psd", "\\.swf", "\\.fla", "\\.ico"
   ]
   
@@ -43,10 +51,14 @@ class Notes
   
   @skipHidden = true
   
-  constructor: (@rootDir) ->
+  constructor: (@rootDir, options) ->
     # Constructor must take at least a root directory as first argument
     throw "Root directory is required." unless @rootDir
-    
+    @patterns = _.map _.extend(options?.annotations or {}, Notes.patterns), (pattern) ->
+      pattern.regexp = setDefaultRegExp pattern.name
+      pattern.label = pattern.label.underline[pattern.color or "white"]
+      pattern
+
   annotate: (done) ->
     files = []
     filesUnderDirectory @rootDir, (file) ->
@@ -56,10 +68,10 @@ class Notes
     output = {}
 
     # TODO: Clean this up some. The implementation got much more complex than I originally planned.
-    run = (file) ->
+    run = (file) =>
       # For each line in the file, check the patterns and output any matches
-      onLine = (line, lineNum, filePath) ->
-        for key, pattern of Notes.patterns
+      onLine = (line, lineNum, filePath) =>
+        for key, pattern of @patterns
           if line.match(pattern.regexp)?
             output[filePath] = "* #{filePath.replace('//','/')}\n".green unless output[filePath]?
             line = line.replace(pattern.regexp, '')
