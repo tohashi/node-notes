@@ -12,11 +12,14 @@
     "node": ">= v0.4.7"
   },
   "contributors": [
-    { "name": "Veselin Todorov",
-      "email": "hi@vesln.com" }
-    ],
+    {
+      "name": "Veselin Todorov",
+      "email": "hi@vesln.com"
+    }
+  ],
   "dependencies": {
-    "colors":  "*"
+    "async": "^0.9.0",
+    "colors": "*"
   },
   "devDependencies": {
     "coffee-script": ">= 1.1.1"

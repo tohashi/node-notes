@@ -1,5 +1,6 @@
 fs = require 'fs'
 colors = require 'colors'
+async = require 'async'
 
 # The Notes class holds all the logic needed for crawling a directory of files, 
 # searching for a set of patterns to annotate.
@@ -42,47 +43,39 @@ class Notes
   
   @skipHidden = true
   
-  @concurrentFiles = 30
-  
   constructor: (@rootDir) ->
     # Constructor must take at least a root directory as first argument
     throw "Root directory is required." unless @rootDir
     
-  annotate: ->
+  annotate: (done) ->
     files = []
     filesUnderDirectory @rootDir, (file) ->
       files.push file
     
     # Simple way to control # of files being opened at a time...
-    concurrency = 0
     output = {}
-    
+
     # TODO: Clean this up some. The implementation got much more complex than I originally planned.
-    run = ->
-      while files.length > 0 and concurrency < Notes.concurrentFiles
-        # For each line in the file, check the patterns and output any matches
-        onLine = (line, lineNum, filePath) ->
-          for key, pattern of Notes.patterns
-            if line.match(pattern.regexp)?
-              output[filePath] = "* #{filePath.replace('//','/')}\n".green unless output[filePath]?
-              line = line.replace(pattern.regexp, '')
-              # Make the output kinda pretty...
-              spaces = '     '
-              spaces = spaces.substring(0, spaces.length-1) for n in (lineNum+1).toString()
-              lineNumStr = "Line #{lineNum}:".grey
-              output[filePath] += "  #{lineNumStr}#{spaces}#{pattern.label} #{line}\n"
-            
-        onCompletion = (filePath) ->
-          # Spit out the results for the file
-          console.log output[filePath] if output[filePath]?
-          concurrency--
-          run()
-      
-        file = files.shift()
-        # Process the file line-by-line
-        eachLineIn file, onLine, onCompletion
-        concurrency++
-    run()
+    run = (file) ->
+      # For each line in the file, check the patterns and output any matches
+      onLine = (line, lineNum, filePath) ->
+        for key, pattern of Notes.patterns
+          if line.match(pattern.regexp)?
+            output[filePath] = "* #{filePath.replace('//','/')}\n".green unless output[filePath]?
+            line = line.replace(pattern.regexp, '')
+            # Make the output kinda pretty...
+            spaces = '     '
+            spaces = spaces.substring(0, spaces.length-1) for n in (lineNum+1).toString()
+            lineNumStr = "Line #{lineNum}:".grey
+            output[filePath] += "  #{lineNumStr}#{spaces}#{pattern.label} #{line}\n"
+          
+      onCompletion = (filePath) ->
+        # Spit out the results for the file
+        console.log output[filePath] if output[filePath]?
+    
+      # Process the file line-by-line
+      eachLineIn file, onLine, onCompletion
+    async.each files, run, (resusts) -> done? results
   
   filesUnderDirectory = (dir, fileCallback) ->
     try
