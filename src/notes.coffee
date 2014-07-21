@@ -68,7 +68,7 @@ class Notes
     output = {}
 
     # TODO: Clean this up some. The implementation got much more complex than I originally planned.
-    run = (file) =>
+    run = (file, _done) =>
       # For each line in the file, check the patterns and output any matches
       onLine = (line, lineNum, filePath) =>
         for key, pattern of @patterns
@@ -84,10 +84,11 @@ class Notes
       onCompletion = (filePath) ->
         # Spit out the results for the file
         console.log output[filePath] if output[filePath]?
+        _done()
     
       # Process the file line-by-line
       eachLineIn file, onLine, onCompletion
-    async.each files, run, (resusts) -> done? results
+    async.waterfall _.map(files, (file) -> ((_done) -> run file, _done)), (err, results) -> done? results
   
   filesUnderDirectory = (dir, fileCallback) ->
     try
