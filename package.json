@@ -23,7 +23,7 @@
     "underscore": "^1.6.0"
   },
   "devDependencies": {
-    "coffee-script": ">= 1.1.1"
+    "coffee-script": "^1.7.1"
   },
   "bin": {
     "notes": "./bin/notes"
