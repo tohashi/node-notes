@@ -15,7 +15,7 @@ _ = require 'underscore'
 class Notes
 
   setDefaultRegExp = (name) ->
-    new RegExp "^.*(#|\\/\\/|\\/\\*)\\s*#{name}\\W*"
+    new RegExp "^.*(#|\\/\\/|\\/\\*)\\s*#{name}:?\\s*"
 
   # Defines the patterns that will be checked during file annotating.
   # If you want to run this on something other than ruby, coffeesciprt, or javascript 
